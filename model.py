@@ -1,14 +1,15 @@
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Date
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-ENGINE = None
-Session = None
+engine = create_engine("sqlite:///chindict.db", echo=False)
+session = scoped_session(sessionmaker(bind=engine, autocommit=False, autoflush=False))
 
 Base = declarative_base()
+Base.query = session.query_property()
 
 ### Class declarations go here
 class Entry(Base):
@@ -24,44 +25,79 @@ class Dish(Base):
     __tablename__ = "dishes"
 
     id = Column(Integer, primary_key=True)
-    simplified = Column(String(64))
-    traditional = Column(String(64))
-    pinyin = Column(String(64))
-    description = Column(String(64))
+    eng_name = Column(String(64), nullable=False)
+    chin_name = Column(String(64), nullable=False)
+    pinyin = Column(String(64), nullable=True)
+    desc = Column(String(64), nullable=True)
+
+class Restaurant(Base):
+    __tablename__ = "restaurants"
+
+    id = Column(Integer, primary_key=True)
+    name = Column(String(64), nullable=False)
+    #chin_name = Column(String(64), nullable=True)
+    #location?
+    #yelp url?
+    #dianping url?
 
 class User(Base):
     __tablename__ = "users"
 
     id = Column(Integer, primary_key=True)
-    username = Column(String(64))
-    password = Column(String(64))
+    username = Column(String(64), nullable=False)
+    password = Column(String(64), nullable=False)
+    #email = Column(String(64), nullable=True)
 
 class Review(Base):
     __tablename__ = "reviews"
 
     id = Column(Integer, primary_key=True)
-    #user_id
-    #dish_id
-    text = Column(String(64))
+    user_id = Column(Integer, ForeignKey('users.id'))
+    rest_dish_id = Column(Integer, ForeignKey('rest_dishes.id'))
+    text = Column(String(64), nullable=True)
+    date = Column(Date, nullable=False)
+
+    user = relationship("User", backref=backref("reviews", order_by=id))
+    dish = relationship("Dish", backref=backref("reviews", order_by=id))
 
 class Tag(Base):
     __tablename__ = "tags"
 
     id = Column(Integer, primary_key=True)
-    text = Column(String(64))
-    url = Column(String(64))
+    name = Column(String(64), nullable=False)
+    #img_url = Column(String(64), nullable=False)
 
-class Tag_Assoc(Base):
-    __tablename__ = "tag_assocs"
+class Rest_Dish(Base):
+    __tablename__ = "rest_dishes"
 
     id = Column(Integer, primary_key=True)
-    #tag_id
-    #dish_id 
+    dish_id = Column(Integer, ForeignKey('dishes.id'))
+    rest_id = Column(Integer, ForeignKey('restaurants.id'))
 
+class Dish_Tag(Base):
+    __tablename__ = "dish_tags"
+
+    id = Column(Integer, primary_key=True)
+    tag_id = Column(Integer, ForeignKey('tags.id'))
+    dish_id = Column(Integer, ForeignKey('dishes.id'))
+    rest_dish_id = Column(Integer, ForeignKey('rest_dishes.id')) 
+
+    tag = relationship("Tag", backref=backref("dish_tags", order_by=id))
+    dish = relationship("Dish", backref=backref("dish_tags", order_by=id))
+    rest_dish = relationship("Rest_Dish", backref=backref("dish_tags", order_by=id))
+
+# class Images(Base):
+#     __tablename__ = "images"
+
+#     id = Column(Integer, primary_key=True)
+#     rest_dish_id = Column(Integer, ForeignKey('rest_dishes.id'))
+
+#     rest_dish = relationship("Rest_Dish", backref=backref("images", order_by=id))
 
 ### End class declarations
 
 def find_combinations(text):
+    """Find all combinations of sequential characters within a string of characters."""
     length = len(text)
     n = length - 1
     num_combos = 2 ** (length - 1)
@@ -90,7 +126,8 @@ def find_combinations(text):
 
 
 def search(combinations):
-    session = connect()
+    """Look through a list of possible word combinations to find a valid set, 
+    and return Entry objects associated with each word."""
     for c in combinations:
         found_def = True
         chars = []
@@ -105,20 +142,21 @@ def search(combinations):
         if found_def:
             return chars
 
-def connect():
-    global ENGINE
-    global Session
+# def connect():
+#     """Connect to the database."""    
+#     global ENGINE
+#     global Session
 
-    ENGINE = create_engine("sqlite:///chindict.db", echo=True)
-    Session = sessionmaker(bind=ENGINE)
+#     ENGINE = create_engine("sqlite:///chindict.db", echo=True)
+#     Session = sessionmaker(bind=ENGINE)
 
-    return Session()
+#     return Session()
 
 
 
 def main():
-   connect()
-   Base.metadata.create_all(ENGINE) 
+    # Uncomment and run model.py as main to create schema
+   Base.metadata.create_all(engine) 
 
 if __name__ == "__main__":
     main()

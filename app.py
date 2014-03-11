@@ -43,10 +43,9 @@ def upload_image():
         file.save(image_path)
         text = process_image(image_path)
 
-        # TODO: This should look up the dish in the dish database.
-        dish_id = None
+        # Look up the dish in the dishes table.
+        dish_id = model.session.query(Dish).filter_by(chin_name=text)
 
-        # TODO: This should return dish_id
         if dish_id:
             return redirect(url_for("view_dish", id=dish_id))
         else:
@@ -63,8 +62,7 @@ def upload_image():
 @app.route("/dish/<int:id>", methods=["GET"])
 def view_dish(id):
     # TODO: Have this find the name of the dish in the database.
-    session = model.connect()
-    dish = session.query(model.Entry).get(id)
+    dish = model.session.query(model.Entry).get(id)
     return render_template("dish.html", dish=dish)
 
 # @app.route("/dish/add", methods=["GET"])
