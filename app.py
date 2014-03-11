@@ -19,12 +19,17 @@ def allowed_file(filename):
 
 def process_image(path):
     text = pytesser.image_file_to_string(path, lang='chi_sim', graceful_errors=True)
-    return text.decode('utf-8')
+    print text
+    return text.decode('utf-8').rstrip('\n')
 
 def lookup_text(text):
     session = model.connect()
     entry = session.query(model.Entry).filter_by(simplified=text).first()
-    return entry.definition
+    if entry:
+        return entry.id
+    else:
+        return None
+
 
 @app.route("/", methods=["GET"])
 def index():
@@ -40,9 +45,12 @@ def upload_image():
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(image_path)
         text = process_image(image_path)
-        dish_name = lookup_text(text)
+        dish_id = lookup_text(text)
         # TODO: Have it look up dish in database, find id, etc.
-        return dish_name
+        if dish_id:
+            return redirect(url_for("view_dish", id=dish_id))
+        else: 
+            return "No dish found."
 
 @app.route("/image/<filename>", methods=["GET"])
 def uploaded_file(filename):
@@ -52,8 +60,9 @@ def uploaded_file(filename):
 @app.route("/dish/<int:id>", methods=["GET"])
 def view_dish(id):
     # TODO: Have this find the name of the dish in the database.
-    dish_name = ""
-    return render_template("dish.html", name=dish_name)
+    session = model.connect()
+    dish = session.query(model.Entry).get(id)
+    return render_template("dish.html", dish=dish)
 
 if __name__ == "__main__":
     app.run(debug = True)
