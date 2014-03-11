@@ -23,12 +23,9 @@ def process_image(path):
     return text.decode('utf-8').rstrip('\n')
 
 def lookup_text(text):
-    session = model.connect()
-    entry = session.query(model.Entry).filter_by(simplified=text).first()
-    if entry:
-        return entry.id
-    else:
-        return None
+    combinations = model.find_combinations(text)
+    chars = model.search(combinations)
+    return chars
 
 
 @app.route("/", methods=["GET"])
@@ -45,17 +42,23 @@ def upload_image():
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(image_path)
         text = process_image(image_path)
-        dish_id = lookup_text(text)
-        # TODO: Have it look up dish in database, find id, etc.
+
+        # TODO: This should look up the dish in the dish database.
+        dish_id = None
+
+        # TODO: This should return dish_id
         if dish_id:
             return redirect(url_for("view_dish", id=dish_id))
-        else: 
-            return "No dish found."
-
-@app.route("/image/<filename>", methods=["GET"])
-def uploaded_file(filename):
-    image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+        else:
+            # TODO: Look up text.
+            dish = lookup_text(text)
+            if dish:
+                #TODO: Redirect to create new dish.
+                #authenticated = session.get("user_id")
+                authenticated = False
+                return render_template("newdish.html", dish=dish, searchstring=text, authenticated=authenticated)
+            else:
+                return "Dish not found."
 
 @app.route("/dish/<int:id>", methods=["GET"])
 def view_dish(id):
@@ -63,6 +66,11 @@ def view_dish(id):
     session = model.connect()
     dish = session.query(model.Entry).get(id)
     return render_template("dish.html", dish=dish)
+
+# @app.route("/dish/add", methods=["GET"])
+# def add_dish(dish, searchstring):
+#     # TODO - check if logged in first
+#     return render_template("newdish.html", dish=dish)
 
 if __name__ == "__main__":
     app.run(debug = True)
