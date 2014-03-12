@@ -1,10 +1,9 @@
-<html>
-<head>
-    <title>{{ dish.simplified }}</title>
-</head>
-<body>
-    <h1>{{ dish.simplified }}</h1>
-    <h2>{{ dish.pinyin }}</h2>
-    <p>{{ dish.definition }}</p>
-</body>
-</html>
+{% extends 'master.html' %}
+
+{% block body %}
+    <h1>{{ dish.chin_name }}</h1>
+    <h2>{{ dish.eng_name }}</h2>
+    <h3>{{ dish.pinyin }}</h3>
+    <p>{{ dish.desc }}</p>
+
+{% endblock %}

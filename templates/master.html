@@ -1,0 +1,18 @@
+<html>
+    <head>
+        <title>Chinese Menu Reader</title>
+        <link href="/static/css/bootstrap.css" rel="stylesheet">
+    </head>
+    <body>
+        <div class="container">
+            <div id="flashed_messages">
+                <ul>
+                    {% for message in get_flashed_messages() %}
+                    <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% block body %}{% endblock %}
+        </div>
+    </body>
+</html>

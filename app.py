@@ -14,12 +14,15 @@ app = Flask(__name__)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 def allowed_file(filename):
-    # Checks if the filename ends in one of the allowed extensions
+    """Check if the filename ends in one of the allowed extensions"""
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
 def process_image(path):
+    """Run the image through Tesseract and get text."""
+    # TODO: Add an image processing step.
     text = pytesser.image_file_to_string(path, lang='chi_sim', graceful_errors=True)
-    print text
+
+    # Text is in utf-8. Decode to Unicode, and strip extra newline character.
     return text.decode('utf-8').rstrip('\n')
 
 def lookup_text(text):
@@ -34,6 +37,7 @@ def index():
 
 @app.route("/", methods=["POST"])
 def upload_image():
+    """Get uploaded image, process, and redirect to appropriate page."""
     # Get the file from the request object
     file = request.files['file']
     if file and allowed_file(file.filename):
@@ -41,34 +45,46 @@ def upload_image():
         # file.save actually saves it on the system
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(image_path)
+
+        # send the image to tesseract for processing
         text = process_image(image_path)
 
         # Look up the dish in the dishes table.
-        dish_id = model.session.query(Dish).filter_by(chin_name=text)
+        dish = model.session.query(model.Dish).filter_by(chin_name=text).first()
 
-        if dish_id:
-            return redirect(url_for("view_dish", id=dish_id))
+        if dish:
+            return redirect(url_for("view_dish", id=dish.id))
         else:
-            # TODO: Look up text.
-            dish = lookup_text(text)
-            if dish:
-                #TODO: Redirect to create new dish.
-                #authenticated = session.get("user_id")
-                authenticated = False
-                return render_template("newdish.html", dish=dish, searchstring=text, authenticated=authenticated)
-            else:
-                return "Dish not found."
+            return redirect(url_for("translate_text", text=text))
 
 @app.route("/dish/<int:id>", methods=["GET"])
 def view_dish(id):
-    # TODO: Have this find the name of the dish in the database.
-    dish = model.session.query(model.Entry).get(id)
+    dish = model.session.query(model.Dish).get(id)
     return render_template("dish.html", dish=dish)
 
-# @app.route("/dish/add", methods=["GET"])
-# def add_dish(dish, searchstring):
-#     # TODO - check if logged in first
-#     return render_template("newdish.html", dish=dish)
+@app.route("/dish/search/<string:text>", methods=["GET"])
+def translate_text(text):
+    chars = lookup_text(text)
+    if chars:
+        #authenticated = session.get("user_id")
+        authenticated = True
+        return render_template("search.html", dish=chars, searchstring=text, authenticated=authenticated)
+    else:
+        # redirect to search instead?
+        return redirect(url_for("index"))
+
+@app.route("/dish/new", methods=["POST"])
+def add_dish():
+    chin_name = request.form.get("chin_name")
+    eng_name = request.form.get("eng_name")
+    pinyin = request.form.get("pinyin")
+    desc = request.form.get("desc")
+    dish = model.Dish(chin_name=chin_name, eng_name=eng_name, pinyin=pinyin, desc=desc)
+    model.session.add(dish)
+    model.session.commit()
+    return redirect(url_for("view_dish", id=dish.id))
 
 if __name__ == "__main__":
+    # Change debug to False when deploying, probably.
     app.run(debug = True)
+

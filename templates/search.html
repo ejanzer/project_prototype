@@ -1,0 +1,21 @@
+{% extends 'master.html' %}
+
+{% block body %}
+    <h1>Dish Not Found: {{ searchstring }}</h1>
+    {% for char in dish %}
+    <h3>{{ char.simplified }}</h3>
+    <h4>{{ char.pinyin }}</h4>
+    <p>{{ char.definition }}</p>
+    {% endfor %}
+    {% if authenticated %}
+    <h2>Add New Dish</h2>
+    <form action="/dish/new" method="POST" name="add_dish">
+        <input type="text" class="form-control" name="chin_name" value="{{ searchstring }}">
+        <input type="text" class="form-control" name="eng_name">
+        <input type="text" class="form-control" name="pinyin" value="{% for char in dish %}{{ char.pinyin }} {% endfor %}">
+        <textarea name="desc" class="form-control">{% for char in dish %}{{ char.definition }}{% endfor %}</textarea>
+        <input type="submit" class="form-control btn btn-primary">
+    </form>
+    {% endif %}
+
+{% endblock %}
