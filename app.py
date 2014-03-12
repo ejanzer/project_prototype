@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 import model
 import os
 import pytesser
@@ -9,6 +9,7 @@ UPLOAD_FOLDER = "./image_files"
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
 app = Flask(__name__)
+app.secret_key = "superdupersecretish"
 
 # Specify the path to the upload folder
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -38,10 +39,16 @@ def index():
 @app.route("/", methods=["POST"])
 def upload_image():
     """Get uploaded image, process, and redirect to appropriate page."""
+
+    print "Entered route."
+    print request
     # Get the file from the request object
     file = request.files['file']
+    print file.filename;
+
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
+
         # file.save actually saves it on the system
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(image_path)
@@ -56,6 +63,9 @@ def upload_image():
             return redirect(url_for("view_dish", id=dish.id))
         else:
             return redirect(url_for("translate_text", text=text))
+    else:
+        flash("Bad image filename.")
+        return redirect(url_for("index"))
 
 @app.route("/dish/<int:id>", methods=["GET"])
 def view_dish(id):
