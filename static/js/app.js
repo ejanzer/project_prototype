@@ -82,7 +82,7 @@ $(document).ready(function() {
         // data URL to its src attribute.
         convertCanvasToImage(canvas, function(image) {
             console.log("Canvas converted to image.");
-            $('#webcam-file').val(imageString);
+            $('#webcam-file').val(image.src);
             console.log("Value set??");
             $('button#send').prop('disabled', false);
             console.log("Button enabled.");

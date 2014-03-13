@@ -1,4 +1,5 @@
 import datetime
+import base64
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 import model
 import os
@@ -74,7 +75,7 @@ def upload_webcam():
 
     dataURL = request.form.get('dataURL')
     imgURL = dataURL.rsplit(',')[1]
-    print imgURL
+    print len(imgURL)
 
     if imgURL:
         now = datetime.datetime.utcnow()
@@ -86,8 +87,10 @@ def upload_webcam():
 
         # img = Image.open(StringIO(urlopen(imgURL).read()))
 
-        # with open(image_path, 'wb') as f:
-        #     f.write(imgURL.decode('base64'))
+        with open(image_path, 'wb') as f:
+            decode_image = base64.b64decode(imgURL + '=' * (4 - len(imgURL) % 4))
+            print len(decode_image)
+            f.write(decode_image)
 
         # urllib.urlretrieve(imgURL, image_path)
         # img = Image(image_path)
