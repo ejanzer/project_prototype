@@ -27,6 +27,7 @@ function convertCanvasToImage(canvas, callback) {
         callback(image);
     }
     image.src = canvas.toDataURL("image/png");
+    console.log(image.src.length);
 }
 
 var errorCallback = function(e) {

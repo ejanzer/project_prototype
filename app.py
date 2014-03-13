@@ -88,9 +88,10 @@ def upload_webcam():
         # img = Image.open(StringIO(urlopen(imgURL).read()))
 
         with open(image_path, 'wb') as f:
-            decode_image = base64.b64decode(imgURL + '=' * (4 - len(imgURL) % 4))
-            print len(decode_image)
-            f.write(decode_image)
+            decoded_image = base64.b64decode(imgURL + '=' * (4 - len(imgURL) % 4))
+            print len(decoded_image)
+            print len(decoded_image) % 4
+            f.write(decoded_image)
 
         # urllib.urlretrieve(imgURL, image_path)
         # img = Image(image_path)

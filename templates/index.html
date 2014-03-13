@@ -10,7 +10,7 @@
         <div id="image-display" class="hidden">
             <form name="webcam-upload" role="form" class="inline" action="/upload/webcam" method="POST" enctype="multipart/form-data">
                 <canvas id="canvas" width="640" height="480"></canvas>
-                <input type="text" id="webcam-file" name="dataURL" class="hidden">
+                <input type="hidden" id="webcam-file" name="dataURL" class="hidden">
                 <button type="submit" id="send" class="btn btn-lg btn-block btn-success" disabled>Upload</button>
             </form>
         </div>
