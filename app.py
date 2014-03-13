@@ -6,7 +6,7 @@ import os
 import pytesser
 from StringIO import StringIO
 from werkzeug.utils import secure_filename
-from PIL import Image
+from PIL import Image, ImageOps
 from urllib import urlopen
 
 
@@ -23,18 +23,74 @@ def allowed_file(filename):
     """Check if the filename ends in one of the allowed extensions"""
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
+def normalize_image(image_path):
+    """Convert image to grayscale and heighten contrast to optimize for Tesseract."""
+    
+    # open the image from the path
+    im = Image.open(image_path)
+
+    # convert image to palette mode for equalizing
+    palette = im.convert("P")
+
+    # equalize image
+    contrast = ImageOps.equalize(palette)
+
+    # convert image to grayscale
+    bw = contrast.convert('1')
+
+    im = bw
+
+    # save the image
+    im.save(image_path)
+
+    return im
+
 def process_image(path):
     """Run the image through Tesseract and get text."""
-    # TODO: Add an image processing step.
+
+    # do some pre-processing to optimize the image for tesseract
+    im = normalize_image(path)
+    print "converted im"
+
     text = pytesser.image_file_to_string(path, lang='chi_sim', graceful_errors=True)
+    print text
 
     # Text is in utf-8. Decode to Unicode, and strip extra newline character.
     return text.decode('utf-8').rstrip('\n')
 
 def lookup_text(text):
+    """Find likely words in the text and look them up in the database.
+    Returns a list of Entry objects."""
+
+    # Get all combinations of sequential characters in the string.
     combinations = model.find_combinations(text)
+
+    # Look them up until you've found a complete definition.
     chars = model.search(combinations)
     return chars
+
+def get_route(image_path):
+    """Return the appropriate route for an image uploaded by a user.
+    Run the image through Tesseract and get text,
+    Look up the text in the dishes table,
+    If it's not there, then look up individual words in the dictionary."""
+
+    print image_path
+    # send the image to tesseract for processing    
+    text = process_image(image_path)
+    print text
+
+    # Look up the dish in the dishes table, if it exists.
+    dish = model.session.query(model.Dish).filter_by(chin_name=text).first()
+    print dish
+
+    # if the dish is already in the table, return the view for that dish.
+    if dish:
+        return redirect(url_for("view_dish", id=dish.id))
+
+    # otherwise, send text to translate_text to look it up in the dictionary.
+    else:
+        return redirect(url_for("translate_text", text=text))
 
 
 @app.route("/", methods=["GET"])
@@ -54,17 +110,9 @@ def upload_image():
         # file.save actually saves it on the system
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(image_path)
+        print image_path
+        return get_route(image_path)
 
-        # send the image to tesseract for processing
-        text = process_image(image_path)
-
-        # Look up the dish in the dishes table.
-        dish = model.session.query(model.Dish).filter_by(chin_name=text).first()
-
-        if dish:
-            return redirect(url_for("view_dish", id=dish.id))
-        else:
-            return redirect(url_for("translate_text", text=text))
     else:
         flash("Bad image filename.")
         return redirect(url_for("index"))
@@ -97,14 +145,7 @@ def upload_webcam():
         # img = Image(image_path)
         # img.save(image_path)
 
-        text = process_image(image_path)
-
-        dish = model.session.query(model.Dish).filter_by(chin_name=text).first()
-
-        if dish:
-            return redirect(url_for("view_dish", id=dish.id))
-        else:
-            return redirect(url_for("translate_text", text=text))
+        return get_route(image_path)
 
     else:
         # Add a flash message with an error if Tesseract doesn't return anything.
@@ -118,7 +159,19 @@ def view_dish(id):
 
 @app.route("/dish/search/<string:text>", methods=["GET"])
 def translate_text(text):
-    chars = lookup_text(text)
+
+    # It looks like Safari on iOS automatically encodes and quotes URL strings.
+    # Unquoting & decoding to get unicode text.
+    if type(text) == unicode:
+        print "already unicode!"
+        unitext = text
+    else:
+        print "unquoting and decoding url"
+        unquoted_chars = urllib.unquote(text)
+        unitext = unquoted_chars.decode('utf-8')
+
+    chars = lookup_text(unitext)
+
     if chars:
         #authenticated = session.get("user_id")
         authenticated = True

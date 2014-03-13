@@ -27,7 +27,7 @@ def call_tesseract(input_filename, output_filename, language=""):
 	if retcode!=0:
 		errors.check_for_errors()
 
-def image_to_string(im, cleanup = cleanup_scratch_flag):
+def image_to_string(im, lang= _language, cleanup = cleanup_scratch_flag, graceful_errors=True):
 	"""Converts im to file, applies tesseract, and fetches resulting text.
 	If cleanup=True, delete scratch files after operation."""
 	try:

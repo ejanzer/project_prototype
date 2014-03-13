@@ -66,7 +66,7 @@ $(document).ready(function() {
         }
 
     } else {
-        alert("getUserMedia is not supported in your browser.")
+        // alert("getUserMedia is not supported in your browser.")
     }
 
     $("#snap").on("click", function() {
