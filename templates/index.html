@@ -8,11 +8,14 @@
             <button id="snap" class="btn btn-lg btn-block btn-danger">Snap Photo</button>
         </div>
         <div id="image-display" class="hidden">
-            <canvas id="canvas" width="640" height="480"></canvas>
-            <button id="send" class="btn btn-lg btn-block btn-success">Upload</button>
+            <form name="webcam-upload" role="form" class="inline" action="/upload/webcam" method="POST" enctype="multipart/form-data">
+                <canvas id="canvas" width="640" height="480"></canvas>
+                <input type="text" id="webcam-file" name="dataURL" class="hidden">
+                <button type="submit" id="send" class="btn btn-lg btn-block btn-success" disabled>Upload</button>
+            </form>
         </div>
     </div>
-    <form role="form" class="inline" action="/" method="POST" enctype="multipart/form-data">
+    <form name="file-upload" role="form" class="inline" action="/" method="POST" enctype="multipart/form-data">
         <div class="form-group">
             <label for="file">Upload a file</label>
             <input type="file" name="file" class="form-control">

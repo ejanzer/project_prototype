@@ -1,8 +1,12 @@
+import datetime
 from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
 import model
 import os
 import pytesser
+from StringIO import StringIO
 from werkzeug.utils import secure_filename
+from PIL import Image
+from urllib import urlopen
 
 
 UPLOAD_FOLDER = "./image_files"
@@ -40,11 +44,8 @@ def index():
 def upload_image():
     """Get uploaded image, process, and redirect to appropriate page."""
 
-    print "Entered route."
-    print request
     # Get the file from the request object
     file = request.files['file']
-    print file.filename;
 
     if file and allowed_file(file.filename):
         filename = secure_filename(file.filename)
@@ -67,6 +68,45 @@ def upload_image():
         flash("Bad image filename.")
         return redirect(url_for("index"))
 
+@app.route("/upload/webcam", methods=["POST"])
+def upload_webcam():
+    print "Entered upload webcam route"
+
+    dataURL = request.form.get('dataURL')
+    imgURL = dataURL.rsplit(',')[1]
+    print imgURL
+
+    if imgURL:
+        now = datetime.datetime.utcnow()
+        filename = now.strftime('%Y%m%d%M%S') + '.png'
+        print filename
+
+        image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        print image_path
+
+        # img = Image.open(StringIO(urlopen(imgURL).read()))
+
+        # with open(image_path, 'wb') as f:
+        #     f.write(imgURL.decode('base64'))
+
+        # urllib.urlretrieve(imgURL, image_path)
+        # img = Image(image_path)
+        # img.save(image_path)
+
+        text = process_image(image_path)
+
+        dish = model.session.query(model.Dish).filter_by(chin_name=text).first()
+
+        if dish:
+            return redirect(url_for("view_dish", id=dish.id))
+        else:
+            return redirect(url_for("translate_text", text=text))
+
+    else:
+        # Add a flash message with an error if Tesseract doesn't return anything.
+        flash("Bad request: no file object on request.")
+        return redirect(url_for("index"))
+
 @app.route("/dish/<int:id>", methods=["GET"])
 def view_dish(id):
     dish = model.session.query(model.Dish).get(id)
@@ -81,6 +121,7 @@ def translate_text(text):
         return render_template("search.html", dish=chars, searchstring=text, authenticated=authenticated)
     else:
         # redirect to search instead?
+        flash("I couldn't read that, sorry! Try again?")
         return redirect(url_for("index"))
 
 @app.route("/dish/new", methods=["POST"])

@@ -13,19 +13,20 @@ function convertDataURLToBlob(dataURL) {
     }
 
     // Convert to a Blob. Uint8Array is an array of 8-bit unsigned ints.
-    return new Blob([new Uint8Array(array)], {type: 'image/png'});
+    return new Blob([new Uint8Array(chars)], {type: 'image/png'});
 }
 
 function convertCanvasToImage(canvas, callback) {
+    console.log("Converting canvas to image.");
+
     // Create a new image element.
     var image = new Image();
     image.onload = function() {
         // Set the source of the image to the data URL from the canvas.
-        image.src = canvas.toDataURL("image/png");
         // In case it takes a second to load, call back instead of return.
         callback(image);
     }
-
+    image.src = canvas.toDataURL("image/png");
 }
 
 var errorCallback = function(e) {
@@ -76,40 +77,47 @@ $(document).ready(function() {
         // in which case it just grabs the current frame of the video 
         // and paints it onto the canvas.
         context.drawImage(video, 0, 0, 640, 480);
-
+        console.log("canvas drawn");
         // This just creates a new image element and assigns the canvas' 
         // data URL to its src attribute.
         convertCanvasToImage(canvas, function(image) {
+            console.log("Canvas converted to image.");
+            $('#webcam-file').val(imageString);
+            console.log("Value set??");
+            $('button#send').prop('disabled', false);
+            console.log("Button enabled.");
 
             // When the "Upload" button is clicked, 
             // send an AJAX POST request to the server with the image.
             $("button#send").on("click", function() {
+                console.log("Send clicked");
+                // // Convert the image to form data first
+                // // since that's what the route in Flask expects...?
+                // var formData = new FormData();
 
-                // Convert the image to form data first
-                // since that's what the route in Flask expects...?
-                formData = new FormData();
+                // // Convert the image to a blob before sending.
+                // var blob = convertDataURLToBlob(image.src);
 
-                // Flask looks for something called 'file' on the request.
-                formData.append('file', image.src);
-                console.log(formData);
+                // // Flask looks for something called 'file' on the request.
+                // formData.append('file', blob);
+                // console.log(formData);
 
-                // Send an AJAX POST request with the image file.
-                $.ajax({
-                    url: "/",
-                    data: formData, // This doesn't work right now.
-                    cache: false,
-                    mimeType: "multipart/form-data",
-                    contentType: false,
-                    processData: false,
-                    type: "POST",
-                    success: function(data) {
-                        // Fix this later.
-                        $('body').html(data);
-                    }, 
-                    error: function(err) {
-                        console.log(err);
-                    }
-                });
+                // // Send an AJAX POST request with the image file.
+                // $.ajax({
+                //     url: "/upload/webcam",
+                //     data: formData, // This doesn't work right now.
+                //     cache: false,
+                //     mimeType: "multipart/form-data",
+                //     contentType: false,
+                //     processData: false,
+                //     type: "POST",
+                //     success: function(data) {
+                //         // Do something...
+                //     }, 
+                //     error: function(err) {
+                //         console.log(err);
+                //     }
+                // });
             });
         });
     });
