@@ -48,8 +48,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(64), nullable=False)
     password = Column(String(64), nullable=False)
-
-    reviews = relationship("Review", uselist=True)
+    salt = Column(String(64), nullable=False)
 
     def set_password(self, password):
         self.salt = bcrypt.gensalt()

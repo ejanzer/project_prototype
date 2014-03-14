@@ -1,6 +1,6 @@
 import datetime
 import base64
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory, flash, session
 import model
 import os
 import pytesser
@@ -17,6 +17,9 @@ app.secret_key = "superdupersecretish"
 
 # Specify the path to the upload folder
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+def auth():
+    return session.get("user_id")
 
 def allowed_file(filename):
     """Check if the filename ends in one of the allowed extensions"""
@@ -126,7 +129,7 @@ def get_route(image_path):
 
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html")
+    return render_template("index.html", authenticate=auth())
 
 @app.route("/", methods=["POST"])
 def upload_image():
@@ -231,18 +234,19 @@ def login():
         password = request.form.get("password")
 
         # Check if user exists. 
-        user = model.session.query(model.User).filter_by(username=username).one()
+        user = model.session.query(model.User).filter_by(username=username).first()
         print user
 
         if user:
             # check if password matches.
-            if user.password == password:
-                # TODO: Hash the password, lol.
+            if user.authenticate(password):
+                flash("Logged in!")
                 session['user_id'] = user.id
                 # is this where we want to redirect them? 
-                return render_template("index.html")
+                return redirect(url_for('index'))
             else:
                 flash("Username and password don't match.") 
+                return render_template("login.html")
         else: 
             flash("Username and password don't match.")
             return render_template("login.html")
@@ -252,21 +256,31 @@ def signup():
     if request.method == "GET":
         return render_template("signup.html")
     else:
-        username = form.request.get("username")
-        password = form.request.get("password")
-        password_verify = form.request.get("password_verify")
+        username = request.form.get("username")
+        password = request.form.get("password")
+        password_verify = request.form.get("password_verify")
 
         if password == password_verify:
             user = model.session.query(model.User).filter_by(username=username).all()
             if user == []:
-               new_user = model.User(username=username)
+               new_user = model.User(username=username, password="temp", salt="temp")
                new_user.set_password(password)
+               model.session.add(new_user)
+               model.session.commit()
+
+               flash("New user created. Please log in.")
+               return render_template("login.html")
             else:
                 flash("Username already taken.")
                 return render_template("signup.html") 
         else:
             flash("Passwords don't match.")
             return render_template("signup.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("index"))
 
 if __name__ == "__main__":
     # Change debug to False when deploying, probably.
