@@ -6,4 +6,44 @@
     <h3>{{ dish.pinyin }}</h3>
     <p>{{ dish.desc }}</p>
 
+    {% for review in dish.rest_dishes.reviews %}
+        <h4>{{ review.user.username }}{{ review.date }}</h4>
+        <p class="lead">{{ review.restaurant.name }}</p>
+        <p>{{ review.text }}</p>
+    {% endfor %}
+
+    <form action="/" method="POST" role="form" name="addreview">
+        <div class="form-group">
+            <label for="restaurant" class="sr-only">Enter the restaurant name.<label>
+            <input type="text" name="restaurant" class="form-control" placeholder="Where did you eat it?">
+        </div>
+        <div class="form-group">
+            <label for="text" class="sr-only">Enter your review.</label>
+            <textarea class="form-control" name="text">How was it?</textarea>
+        </div>
+        <div class="form-group">
+            <label for="tags" class="sr-only">Enter tags for this dish.</label>
+            <p class="helper">Add some tags.</p>
+            <select name="tags" class="form-control">
+                <option>Chicken</option>
+                <option>Beef</option>
+                <option>Pork</option>
+                <option>Fish</option>
+                <option>Shellfish</option>
+                <option>Peanuts</option>
+                <option>Vegetarian</option>
+                <option>Vegan</option>
+                <option>Gluten-free</option>
+                <option>Dairy-free</option>
+                <option>Organs</option>
+                <option>Other meat</option>
+                <option>Spicy</option>
+                <option>Very Spicy</option>
+                <option>Unbelievably Spicy</option>
+                <option>Ma (Sichuan Peppercorn)</option>
+                <option>Cilantro</option>
+        </div>
+        <button type="submit" class="btn btn-lg btn-primary form-control">Add Review</button>
+    </form>
+
 {% endblock %}

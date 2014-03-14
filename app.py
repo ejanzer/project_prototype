@@ -131,7 +131,8 @@ def get_route(image_path):
 def index():
     return render_template("index.html", authenticate=auth())
 
-@app.route("/", methods=["POST"])
+@app.route("/upload/file", methods=["POST"])
+# Should this be renamed to something like upload/file?
 def upload_image():
     """Get uploaded image, process, and redirect to appropriate page."""
 
@@ -184,10 +185,15 @@ def upload_webcam():
         flash("Bad request: no file object on request.")
         return redirect(url_for("index"))
 
-@app.route("/dish/<int:id>", methods=["GET"])
+@app.route("/dish/<int:id>")
 def view_dish(id):
-    dish = model.session.query(model.Dish).get(id)
-    return render_template("dish.html", dish=dish)
+    if request.method == "GET":
+        dish = model.session.query(model.Dish).get(id)
+        return render_template("dish.html", dish=dish)
+    else:
+        # Add a review for that dish.
+        pass
+
 
 @app.route("/dish/search/<string:text>", methods=["GET"])
 def translate_text(text):
@@ -281,6 +287,31 @@ def signup():
 def logout():
     session.clear()
     return redirect(url_for("index"))
+
+@app.route("/user/<int:id>")
+def view_user(id):
+    # View the page for that user.
+    # Username, and all their associated reviews.
+    user = model.session.query(model.User).get(id)
+    if user:
+        print user.reviews
+        flash("user found!")
+        return redirect(url_for("index"))
+        #return render_template("user.html", user=user, authenticate=auth())
+    else:
+        flash("User not found.")
+        return redirect(url_for("index"))
+
+@app.route("/restaurant/<int:id>")
+def view_restaurant(id):
+    if request.method == "POST":
+        # Add a new review for that restaurant.
+        pass
+    else:
+        # View the page for that restaurant.
+        # Dishes and associated reviews.
+        pass
+
 
 if __name__ == "__main__":
     # Change debug to False when deploying, probably.

@@ -1,0 +1,13 @@
+{% extends 'master.html' %}
+
+{% block body %}
+    <h1>{{ restaurant.name }}</h1>
+    {% for review in restaurant.reviews %}
+        <h2>{{ review.rest_dish.dish.chin_name }}</h2>
+        <h3>{{ review.rest_dish.dish.eng_name }}</h3>
+        <p>{{ review.text }}</p>
+        <p>{{ review.user.username }}{{ review.date }}</p>
+
+    {% endfor %}
+
+{% endblock %}
