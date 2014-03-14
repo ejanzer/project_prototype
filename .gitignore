@@ -1,4 +1,4 @@
-*.png
+/image_files
 *.pyc
 /env
 logs.txt

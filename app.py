@@ -6,7 +6,7 @@ import os
 import pytesser
 from StringIO import StringIO
 from werkzeug.utils import secure_filename
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageFilter
 from urllib import urlopen
 
 
@@ -23,33 +23,59 @@ def allowed_file(filename):
     """Check if the filename ends in one of the allowed extensions"""
     return '.' in filename and filename.rsplit('.', 1)[1] in ALLOWED_EXTENSIONS
 
+def prepare_image(im):
+    """Prepare the image by smoothing it and converting to grayscale."""
+    im = im.filter(ImageFilter.SMOOTH_MORE)
+    im = im.filter(ImageFilter.SMOOTH_MORE)
+    if 'L' != im.mode:
+        im = im.convert('L')
+
+    return im
+
+def remove_noise_by_pixel(im, column, line, pass_factor):
+    """Change a certain pixel to white or black depending on how it compares to threshold."""
+    if im.getpixel((column, line)) < pass_factor:
+        # If the color value of an image is less than the pass factor, make it black.
+        return (0)
+    # Otherwise, make it white.
+    return (255)
+
+def remove_noise(im, pass_factor):
+    """Go through every pixel and convert to white or black based on a threshold pixel."""
+    # for every pixel in the image
+    for column in range(im.size[0]):
+        for line in range(im.size[1]):
+            # if it's darker than a certain value, replace with black.
+            # otherwise, replace with white.
+            value = remove_noise_by_pixel(im, column, line, pass_factor)
+            im.putpixel((column, line), value)
+    return im
+
 def normalize_image(image_path):
     """Convert image to grayscale and heighten contrast to optimize for Tesseract."""
     
     # open the image from the path
     im = Image.open(image_path)
 
-    # convert image to palette mode for equalizing
-    palette = im.convert("P")
+    # smooth image (get rid of little lines, dots) and convert to grayscale
+    im = prepare_image(im)
 
-    # equalize image
-    contrast = ImageOps.equalize(palette)
+    # remove noise in the image by converting everything to black or white
+    # pass factor is the color threshold for determining whether a pixel becomes 
+    # black or white
+    # TODO: Calculate pass factor based on darkest color value in image somehow?
+    pass_factor = 150
+    im = remove_noise(im, pass_factor)
 
-    # convert image to grayscale
-    bw = contrast.convert('1')
-
-    im = bw
-
-    # save the image
     im.save(image_path)
 
     return im
 
+
 def process_image(path):
     """Run the image through Tesseract and get text."""
 
-    # do some pre-processing to optimize the image for tesseract
-    im = normalize_image(path)
+    normalize_image(path)
     print "converted im"
 
     text = pytesser.image_file_to_string(path, lang='chi_sim', graceful_errors=True)
@@ -80,17 +106,23 @@ def get_route(image_path):
     text = process_image(image_path)
     print text
 
-    # Look up the dish in the dishes table, if it exists.
-    dish = model.session.query(model.Dish).filter_by(chin_name=text).first()
-    print dish
+    if text:
 
-    # if the dish is already in the table, return the view for that dish.
-    if dish:
-        return redirect(url_for("view_dish", id=dish.id))
+        # Look up the dish in the dishes table, if it exists.
+        dish = model.session.query(model.Dish).filter_by(chin_name=text).first()
+        print dish
 
-    # otherwise, send text to translate_text to look it up in the dictionary.
+        # if the dish is already in the table, return the view for that dish.
+        if dish:
+            return redirect(url_for("view_dish", id=dish.id))
+
+        # otherwise, send text to translate_text to look it up in the dictionary.
+        else:
+            return redirect(url_for("translate_text", text=text))
+
     else:
-        return redirect(url_for("translate_text", text=text))
+        flash("I'm sorry, I couldn't find any text in that image. Please try again.")
+        return redirect(url_for("index"))
 
 
 @app.route("/", methods=["GET"])
@@ -110,17 +142,15 @@ def upload_image():
         # file.save actually saves it on the system
         image_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(image_path)
-        print image_path
+        #print image_path
         return get_route(image_path)
 
     else:
-        flash("Bad image filename.")
+        flash("No file, or bad image filename.")
         return redirect(url_for("index"))
 
 @app.route("/upload/webcam", methods=["POST"])
 def upload_webcam():
-    print "Entered upload webcam route"
-
     dataURL = request.form.get('dataURL')
     imgURL = dataURL.rsplit(',')[1]
     print len(imgURL)
@@ -163,9 +193,10 @@ def translate_text(text):
     # It looks like Safari on iOS automatically encodes and quotes URL strings.
     # Unquoting & decoding to get unicode text.
     if type(text) == unicode:
-        print "already unicode!"
+        #print "already unicode!"
         unitext = text
     else:
+        # I'm not sure if this is necessary, actually – looks like Flask does this for me.
         print "unquoting and decoding url"
         unquoted_chars = urllib.unquote(text)
         unitext = unquoted_chars.decode('utf-8')

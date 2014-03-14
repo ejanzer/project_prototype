@@ -7,3 +7,13 @@ div#image-display {
     width: 640px;
     margin: 10px auto;
 }
+
+div.content-main {
+    text-align: center;
+}
+
+/*Add media queries around this so it resizes when the screen is smaller.*/
+form.upload {
+    width: 500px;
+    margin: 10px auto;
+}
