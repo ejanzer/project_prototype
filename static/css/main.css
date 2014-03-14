@@ -17,3 +17,18 @@ form.upload {
     width: 500px;
     margin: 10px auto;
 }
+
+div#login {
+    text-align: right;
+}
+
+form.signin {
+    width: 330px;
+    margin: 50px auto;
+}
+
+/* Same here about the media queries. */
+div.wrapper {
+    width: 600px;
+    margin: auto;
+}

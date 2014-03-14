@@ -1,3 +1,5 @@
+import bcrypt
+
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import create_engine
 from sqlalchemy import Column, Integer, String, Date
@@ -46,7 +48,17 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     username = Column(String(64), nullable=False)
     password = Column(String(64), nullable=False)
-    #email = Column(String(64), nullable=True)
+
+    reviews = relationship("Review", uselist=True)
+
+    def set_password(self, password):
+        self.salt = bcrypt.gensalt()
+        password = password.encode("utf-8")
+        self.password = bcrypt.hashpw(password, self.salt)
+
+    def authenticate(self, password):
+        password = password.encode("utf-8")
+        return bcrypt.hashpw(password, self.salt.encode("utf-8")) == self.password
 
 class Review(Base):
     __tablename__ = "reviews"

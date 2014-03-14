@@ -4,7 +4,6 @@ from flask import Flask, render_template, request, redirect, url_for, send_from_
 import model
 import os
 import pytesser
-from StringIO import StringIO
 from werkzeug.utils import secure_filename
 from PIL import Image, ImageOps, ImageFilter
 from urllib import urlopen
@@ -196,7 +195,7 @@ def translate_text(text):
         #print "already unicode!"
         unitext = text
     else:
-        # I'm not sure if this is necessary, actually – looks like Flask does this for me.
+        # I'm not sure if this is necessary, actually. Looks like Flask does this for me.
         print "unquoting and decoding url"
         unquoted_chars = urllib.unquote(text)
         unitext = unquoted_chars.decode('utf-8')
@@ -222,6 +221,52 @@ def add_dish():
     model.session.add(dish)
     model.session.commit()
     return redirect(url_for("view_dish", id=dish.id))
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "GET":
+        return render_template("login.html")
+    else:
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # Check if user exists. 
+        user = model.session.query(model.User).filter_by(username=username).one()
+        print user
+
+        if user:
+            # check if password matches.
+            if user.password == password:
+                # TODO: Hash the password, lol.
+                session['user_id'] = user.id
+                # is this where we want to redirect them? 
+                return render_template("index.html")
+            else:
+                flash("Username and password don't match.") 
+        else: 
+            flash("Username and password don't match.")
+            return render_template("login.html")
+
+@app.route("/signup", methods=["GET", "POST"])
+def signup():
+    if request.method == "GET":
+        return render_template("signup.html")
+    else:
+        username = form.request.get("username")
+        password = form.request.get("password")
+        password_verify = form.request.get("password_verify")
+
+        if password == password_verify:
+            user = model.session.query(model.User).filter_by(username=username).all()
+            if user == []:
+               new_user = model.User(username=username)
+               new_user.set_password(password)
+            else:
+                flash("Username already taken.")
+                return render_template("signup.html") 
+        else:
+            flash("Passwords don't match.")
+            return render_template("signup.html")
 
 if __name__ == "__main__":
     # Change debug to False when deploying, probably.

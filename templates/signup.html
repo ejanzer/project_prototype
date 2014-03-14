@@ -1,0 +1,23 @@
+{% extends 'master.html' %}
+
+{% block body %}
+<div class="wrapper">
+    <form name="signup" class="signin" action="/signup" method="POST">
+        <h2 class="login">Sign up</h2>
+        <div class="form-group">
+            <label for="username" class="sr-only">Username</label>
+            <input type="text" class="form-control" name="username" placeholder="Username">
+        </div>
+        <div class="form-group">
+            <label for="password" class="sr-only">Password</label>
+            <input type="password" class="form-control" placeholder="Password" name="password">
+        </div>
+        <div class="form-group">
+            <label for="password_verify" class="sr-only">Password, again</label>
+            <input type="password" class="form-control" placeholder="Password, again" name="password_verify">
+        </div>
+        <button type="submit" class="btn btn-lg btn-block btn-primary">Sign up</button>
+    </form>
+</div>
+
+{% endblock %}
