@@ -185,14 +185,45 @@ def upload_webcam():
         flash("Bad request: no file object on request.")
         return redirect(url_for("index"))
 
-@app.route("/dish/<int:id>")
+@app.route("/dish/<int:id>", methods=["GET", "POST"])
 def view_dish(id):
+
+    dish = model.session.query(model.Dish).get(id)
+
     if request.method == "GET":
-        dish = model.session.query(model.Dish).get(id)
-        return render_template("dish.html", dish=dish)
-    else:
-        # Add a review for that dish.
-        pass
+        return render_template("dish.html", dish=dish, authenticate=auth())
+    elif request.method == "POST":
+        user_id = session.get("user_id")
+
+        if not user_id:
+            # flash a message, redirect.
+            pass
+
+        date = datetime.datetime.utcnow()
+
+        rest_name = request.form.get("restaurant")
+        review_text = request.form.get("review")
+
+        # TODO: This isn't a great way of searching, but let's assume restaurant 
+        # names are unique for now.
+        restaurant = model.session.query(model.Restaurant).filter_by(name=rest_name).first()
+
+        if not restaurant:
+            restaurant = model.Restaurant(name=rest_name)
+            model.session.add(restaurant)
+            model.session.commit()
+
+        # Create a new rest_dish for this dish at this restaurant.
+        rest_dish = model.Rest_Dish(dish_id=id, rest_id=restaurant.id)
+        model.session.add(rest_dish)
+        model.session.commit()
+
+        # Add a new review.
+        review = model.Review(user_id=user_id, dish_id=id, rest_dish_id=rest_dish.id, text=review_text, date=date)
+        model.session.add(review)
+        model.session.commit()
+
+        return render_template("dish.html", id=id, dish=dish, authenticate=auth())
 
 
 @app.route("/dish/search/<string:text>", methods=["GET"])
@@ -212,9 +243,7 @@ def translate_text(text):
     chars = lookup_text(unitext)
 
     if chars:
-        #authenticated = session.get("user_id")
-        authenticated = True
-        return render_template("search.html", dish=chars, searchstring=text, authenticated=authenticated)
+        return render_template("search.html", dish=chars, searchstring=text, authenticated=auth())
     else:
         # redirect to search instead?
         flash("I couldn't read that, sorry! Try again?")
@@ -304,13 +333,8 @@ def view_user(id):
 
 @app.route("/restaurant/<int:id>")
 def view_restaurant(id):
-    if request.method == "POST":
-        # Add a new review for that restaurant.
-        pass
-    else:
-        # View the page for that restaurant.
-        # Dishes and associated reviews.
-        pass
+    restaurant = model.session.query(model.Restaurant).get(id)
+    return render_template("restaurant.html", restaurant=restaurant, authenticate=auth())
 
 
 if __name__ == "__main__":
