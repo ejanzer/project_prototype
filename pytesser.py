@@ -60,17 +60,17 @@ def image_file_to_string(filename, lang = _language, cleanup = cleanup_scratch_f
 	
 
 if __name__=='__main__':
-	im = Image.open('phototest.tif')
+	im = Image.open('tesseract/phototest.tif')
 	text = image_to_string(im)
 	print text
 	try:
-		text = image_file_to_string('fnord.tif', graceful_errors=False)
+		text = image_file_to_string('tesseract/fnord.tif', graceful_errors=False)
 	except errors.Tesser_General_Exception, value:
 		print "fnord.tif is incompatible filetype.  Try graceful_errors=True"
 		print value
-	text = image_file_to_string('fnord.tif', graceful_errors=True)
+	text = image_file_to_string('tesseract/fnord.tif', graceful_errors=True)
 	print "fnord.tif contents:", text
-	text = image_file_to_string('fonts_test.png', graceful_errors=True)
+	text = image_file_to_string('tesseract/fonts_test.png', graceful_errors=True)
 	print text
 
 
