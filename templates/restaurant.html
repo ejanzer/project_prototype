@@ -2,11 +2,13 @@
 
 {% block body %}
     <h1>{{ restaurant.name }}</h1>
-    {% for review in restaurant.reviews %}
-        <h2>{{ review.rest_dish.dish.chin_name }}</h2>
-        <h3>{{ review.rest_dish.dish.eng_name }}</h3>
-        <p>{{ review.text }}</p>
-        <p>{{ review.user.username }}{{ review.date }}</p>
+    {% for rest_dish in restaurant.rest_dishes %}
+
+        {% for review in rest_dish.reviews %}
+            <h2><a href="/dish/{{ rest_dish.dish.id }}">{{ rest_dish.dish.eng_name }}</a><small> {{ rest_dish.dish.chin_name }}</small></h2>
+            <h4>{{ review.user.username }} <small>{{ review.date }}</small></h4>
+            <p class="lead">{{ review.text }}</p>
+        {% endfor %}
 
     {% endfor %}
 
