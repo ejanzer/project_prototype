@@ -7,7 +7,7 @@ from sqlalchemy.orm import sessionmaker, scoped_session
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship, backref
 
-engine = create_engine("sqlite:///chindict.db", echo=False)
+engine = create_engine("sqlite:///menureader.db", echo=False)
 session = scoped_session(sessionmaker(bind=engine, autocommit=False, autoflush=False))
 
 Base = declarative_base()
@@ -65,7 +65,7 @@ class Review(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey('users.id'))
     rest_dish_id = Column(Integer, ForeignKey('rest_dishes.id'))
-    #dish_id = Column(Integer, ForeignKey('dishes.id'))
+    dish_id = Column(Integer, ForeignKey('dishes.id'))
     text = Column(String(64), nullable=True)
     date = Column(Date, nullable=False)
 
@@ -88,6 +88,7 @@ class Rest_Dish(Base):
     rest_id = Column(Integer, ForeignKey('restaurants.id'))
 
     dish = relationship("Dish", backref=backref("rest_dishes", order_by=id))
+    restaurant = relationship("Restaurant", backref=backref("rest_dishes", order_by=id))
 
 class Dish_Tag(Base):
     __tablename__ = "dish_tags"
@@ -156,17 +157,6 @@ def search(combinations):
         
         if found_def:
             return chars
-
-# def connect():
-#     """Connect to the database."""    
-#     global ENGINE
-#     global Session
-
-#     ENGINE = create_engine("sqlite:///chindict.db", echo=True)
-#     Session = sessionmaker(bind=ENGINE)
-
-#     return Session()
-
 
 
 def main():
