@@ -12,6 +12,8 @@ from urllib import urlopen
 UPLOAD_FOLDER = "./image_files"
 ALLOWED_EXTENSIONS = set(['png', 'jpg', 'jpeg', 'gif'])
 
+THRESHOLD_OFFSET = 20
+
 app = Flask(__name__)
 app.secret_key = "superdupersecretish"
 
@@ -34,22 +36,33 @@ def prepare_image(im):
 
     return im
 
-def remove_noise_by_pixel(im, column, line, pass_factor):
+def get_pass_factor(im):
+    """Threshold the image using the average pixel color value and subtracting 
+    the THRESHOLD_OFFSET"""
+
+    pixel_values = im.getdata()
+    average = sum(pixel_values)/len(pixel_values)
+    return average - THRESHOLD_OFFSET
+
+def remove_noise_by_pixel(im, column, line):
     """Change a certain pixel to white or black depending on how it compares to threshold."""
+    
+    pass_factor = get_pass_factor(im)
+
     if im.getpixel((column, line)) < pass_factor:
         # If the color value of an image is less than the pass factor, make it black.
         return (0)
     # Otherwise, make it white.
     return (255)
 
-def remove_noise(im, pass_factor):
+def remove_noise(im):
     """Go through every pixel and convert to white or black based on a threshold pixel."""
     # for every pixel in the image
     for column in range(im.size[0]):
         for line in range(im.size[1]):
             # if it's darker than a certain value, replace with black.
             # otherwise, replace with white.
-            value = remove_noise_by_pixel(im, column, line, pass_factor)
+            value = remove_noise_by_pixel(im, column, line)
             im.putpixel((column, line), value)
     return im
 
@@ -66,8 +79,7 @@ def normalize_image(image_path):
     # pass factor is the color threshold for determining whether a pixel becomes 
     # black or white
     # TODO: Calculate pass factor based on darkest color value in image somehow?
-    pass_factor = 150
-    im = remove_noise(im, pass_factor)
+    im = remove_noise(im)
 
     im.save(image_path)
 
